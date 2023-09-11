@@ -13,3 +13,6 @@ Runs command-line arguments:
 
 ## Client
 _Work in progress..._
+
+Connecting to the Server
+- `mpris-client.py ip:port`
