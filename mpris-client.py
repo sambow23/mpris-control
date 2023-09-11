@@ -3,15 +3,16 @@ import time
 import threading
 import curses
 import contextlib
+import argparse
 
-SERVER_HOST = "localhost"
-SERVER_PORT = 8888
 REFRESH_FREQUENCY = 2
 COMMANDS = ["play", "pause", "next", "previous", "info", "switch"]
 CLEAR_DELAY = 5
 
 class MusicClient:
-    def __init__(self):
+    def __init__(self, server_host, server_port):
+        self.server_host = server_host
+        self.server_port = server_port
         self.setup_display()
 
     def setup_display(self):
@@ -63,7 +64,7 @@ class MusicClient:
     def create_connection(self):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((SERVER_HOST, SERVER_PORT))
+            s.connect((self.server_host, int(self.server_port)))
             return s
         except Exception as e:
             print(f"Error: {e}")
@@ -76,7 +77,11 @@ class MusicClient:
         curses.endwin()
 
 if __name__ == '__main__':
-    client = MusicClient()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("address", type=str, help="Server address in the format 'host:port'")
+    args = parser.parse_args()
+    server_host, server_port = args.address.split(":")
+    client = MusicClient(server_host, server_port)
     try:
         client.main()
     finally:
