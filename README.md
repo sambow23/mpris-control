@@ -16,3 +16,7 @@ _Work in progress..._
 
 Connecting to the Server
 - `mpris-client.py ip:port`
+
+## Dependencies
+- dbus-python
+
