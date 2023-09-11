@@ -2,6 +2,7 @@ import socket
 import time
 import threading
 import curses
+import contextlib
 
 SERVER_HOST = "localhost"
 SERVER_PORT = 8888
@@ -55,20 +56,18 @@ class MusicClient:
                 pass
 
     def main(self):
+        with contextlib.closing(self.create_connection()) as s:
+            threading.Thread(target=self.auto_request_song_info, args=(s,), daemon=True).start()
+            self.process_user_input(s)
+            
+    def create_connection(self):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((SERVER_HOST, SERVER_PORT))
-
-            info_thread = threading.Thread(target=self.auto_request_song_info, args=(s,))
-            info_thread.daemon = True
-            info_thread.start()
-
-            self.process_user_input(s)
+            return s
         except Exception as e:
             print(f"Error: {e}")
-        finally:
-            if s:
-                s.close()
+            raise e
 
     def end_session(self):
         curses.nocbreak()
