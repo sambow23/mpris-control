@@ -1,0 +1,84 @@
+import socket
+import time
+import threading
+import curses
+
+SERVER_HOST = "localhost"
+SERVER_PORT = 8888
+REFRESH_FREQUENCY = 2
+COMMANDS = ["play", "pause", "next", "previous", "info", "switch"]
+CLEAR_DELAY = 5
+
+class MusicClient:
+    def __init__(self):
+        self.setup_display()
+
+    def setup_display(self):
+        self.stdscr = curses.initscr()
+        self.lines, self.cols = self.stdscr.getmaxyx()
+        self.cmd_window = curses.newwin(1, self.cols, self.lines - 1, 0)
+        self.info_window = self.stdscr.subwin(self.lines - 1, self.cols, 0, 0)
+        curses.curs_set(0)
+        self.stdscr.nodelay(True)
+        self.stdscr.timeout(100)
+        self.stdscr.keypad(True)
+
+    def auto_request_song_info(self, s):
+        while True:
+            try:
+                self.info_window.clear()
+                self.info_window.addnstr(0, 0, "Song Info:", self.cols-1)
+                s.send('info'.encode())
+                data = s.recv(1024).decode()
+                data = data[:self.cols-1]
+                self.info_window.addnstr(1, 0, data, self.cols-1-1)
+                self.info_window.refresh()
+                time.sleep(REFRESH_FREQUENCY)
+            except curses.error:
+                pass
+
+    def process_user_input(self, s):
+        while True:
+            try:
+                self.cmd_window.clear()
+                self.cmd_window.addnstr(0, 0, "Type command (play, pause, next, switch etc.) here:", self.cols-1)
+                command = self.cmd_window.getstr().decode()
+                if command.lower().split(' ')[0] in COMMANDS:
+                    s.send(command.encode())
+                    data = s.recv(1024).decode()
+                    self.cmd_window.addnstr(1, 0, data[:self.cols-1], self.cols-1)
+                else:
+                    self.cmd_window.addnstr(1, 0, "Invalid command", self.cols-1)
+                time.sleep(CLEAR_DELAY)
+                self.cmd_window.clear()
+            except curses.error:
+                pass
+
+    def main(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((SERVER_HOST, SERVER_PORT))
+
+            info_thread = threading.Thread(target=self.auto_request_song_info, args=(s,))
+            info_thread.daemon = True
+            info_thread.start()
+
+            self.process_user_input(s)
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            if s:
+                s.close()
+
+    def end_session(self):
+        curses.nocbreak()
+        self.stdscr.keypad(False)
+        curses.echo()
+        curses.endwin()
+
+if __name__ == '__main__':
+    client = MusicClient()
+    try:
+        client.main()
+    finally:
+        client.end_session()
