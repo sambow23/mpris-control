@@ -181,7 +181,30 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Error while attempting to reselect player: {e}")
 
-    else:    
+
+    else:
+        print("Choose the mode:")
+        print("1. Local mode")
+        print("2. TCP server mode")
+        choice = input("Enter your choice (1 or 2): ")
+        if choice == '1':
+            preferred_service = player.preferred_player()
+            if preferred_service and preferred_service in bus.list_names():
+                try:
+                    player.process_services([preferred_service], args.info)
+                except Exception as e:
+                    print(f"Error in processing service: {e}")
+            else:
+                try:
+                    available_services = player.retrieve_services()
+                    player.user_select_player(available_services)
+                except Exception as e:
+                    print(f"Error in processing services: {e}")
+        elif choice == '2':
+            player.run_tcp_server()
+        else:
+            print("Invalid choice.")
+    
         preferred_service = player.preferred_player()
 
         if preferred_service and preferred_service in bus.list_names():
